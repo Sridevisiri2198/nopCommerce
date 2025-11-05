@@ -1,9 +1,8 @@
 name: mydotnetProject
 
 on:
-  push:
-    branches:
-      - develop
+  branches:
+    - develop
 
 jobs:
   dotnet_publish:
