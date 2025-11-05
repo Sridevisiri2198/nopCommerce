@@ -1,12 +1,13 @@
 name: mydotnetProject
 
 on:
-  branches:
-    - develop
+  push:
+    branches:
+      - develop  # Runs only when you push to the 'develop' branch
 
 jobs:
   dotnet_publish:
-    runs-on: self-hosted
+    runs-on: self-hosted  # Make sure your runner has this label
 
     steps:
       - name: Checkout code
