@@ -20,7 +20,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: eu-north-1   # 👈 change to your AWS region
+        aws_region: eu-north-1   # 👈 change to your AWS region
 
     # 3️⃣ Login to Amazon ECR
     - name: Login to Amazon ECR
@@ -31,14 +31,16 @@ jobs:
     - name: Build, tag, and push image to ECR
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: my-springpetclinic    # 👈 your ECR repo name
+        ECR_REPOSITORY: ecr_dotnet_repo    # 👈 your ECR repo name
         IMAGE_TAG: latest
       run: |
         echo "Building Docker image..."
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker build -f dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG 699475951176.dkr.ecr.eu-north-1.amazonaws.com/ecr_dotnet_repo:latest
         echo "Pushing image to ECR..."
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push 699475951176.dkr.ecr.eu-north-1.amazonaws.com/ecr_dotnet_repo:latest
+        echo "Pushing image to ECR..."
 
     # 5️⃣ (Optional) Show image URL
     - name: Display Image URL
-      run: echo "✅ Image pushed to: ${{ steps.login-ecr.outputs.registry }}/my-springpetclinic:latest"
+      run: echo "✅ Image pushed to: ${{ steps.login-ecr.outputs.registry }}/ecr_dotnet_repo:latest"
