@@ -1,10 +1,10 @@
-name: Scan ECR Image with Trivy (Text Report)
+name: Scan ECR Image with Trivy (Table Report)
 
 on:
   push:
     branches:
       - develop
-  workflow_dispatch:   # Optional: allows manual trigger
+  workflow_dispatch:
 
 jobs:
   scan:
@@ -15,11 +15,9 @@ jobs:
       IMAGE_TAG: latest
 
     steps:
-      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -27,32 +25,32 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.aws_region }}
 
-      # 3️⃣ Login to Amazon ECR
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # 4️⃣ Pull image from ECR
-      - name: Pull image from ECR
+      - name: Run Trivy vulnerability scan (table output)
         run: |
-          IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-          echo "Pulling image: $IMAGE_URI"
-          docker pull $IMAGE_URI
+          echo "Scanning ECR image for vulnerabilities..."
+          docker pull ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
-      # 5️⃣ Run Trivy vulnerability scan (text output)
-      - name: Run Trivy vulnerability scan (text report)
-        run: |
-          IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-          echo "Scanning image: $IMAGE_URI"
+          echo ""
+          echo "==================== TRIVY SCAN START ===================="
           trivy image \
+            --exit-code 0 \
             --format table \
-            -o trivy-report.txt \
+            --output trivy-report.txt \
             --ignore-unfixed \
-            --vuln-type os,library \
+            --pkg-types os,library \
             --severity CRITICAL,HIGH \
-            $IMAGE_URI
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
-      # 6️⃣ Upload the .txt report
+          echo "==================== TRIVY SCAN END ======================"
+          echo ""
+          echo "✅ Trivy scan completed. Report saved as trivy-report.txt"
+          echo "----------------------------------------------------------"
+          cat trivy-report.txt
+
       - name: Upload Trivy text report
         if: always()
         uses: actions/upload-artifact@v4
