@@ -1,0 +1,61 @@
+name: Scan ECR Image with Trivy (Text Report)
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:   # Optional: allows manual trigger
+
+jobs:
+  scan:
+    runs-on: self-hosted
+    env:
+      aws_region: eu-north-1
+      ECR_REPOSITORY: ecr_dotnet_repo
+      IMAGE_TAG: latest
+
+    steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.aws_region }}
+
+      # 3️⃣ Login to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 4️⃣ Pull image from ECR
+      - name: Pull image from ECR
+        run: |
+          IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          echo "Pulling image: $IMAGE_URI"
+          docker pull $IMAGE_URI
+
+      # 5️⃣ Run Trivy vulnerability scan (text output)
+      - name: Run Trivy vulnerability scan (text report)
+        run: |
+          IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          echo "Scanning image: $IMAGE_URI"
+          trivy image \
+            --format table \
+            -o trivy-report.txt \
+            --ignore-unfixed \
+            --vuln-type os,library \
+            --severity CRITICAL,HIGH \
+            $IMAGE_URI
+
+      # 6️⃣ Upload the .txt report
+      - name: Upload Trivy text report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-text-report
+          path: trivy-report.txt
