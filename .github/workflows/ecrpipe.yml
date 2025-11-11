@@ -41,7 +41,3 @@ jobs:
           docker build -f dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "Push complete!"
-
-      # 5. Show image URL
-      - name: Display Image URL
-        run: echo "Image pushed to: ${{ steps.login-ecr.outputs.registry }}/ecr_dotnet_repo:latest"
