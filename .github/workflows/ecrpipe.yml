@@ -1,4 +1,4 @@
-name: Build and Push to ECR
+name: Build, Scan, and Push to ECR
 
 on:
   push:
@@ -9,35 +9,48 @@ jobs:
   build:
     runs-on: self-hosted
     env:
-      aws_region: eu-north-1   # 👈 You can define it here
+      aws_region: eu-north-1
 
     steps:
-      # 1. Checkout repository
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Configure AWS credentials
+      # 2️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.aws_region }}   # 👈 using env variable value
+          aws-region: ${{ env.aws_region }}
 
-      # 3. Login to Amazon ECR
+      # 3️⃣ Login to Amazon ECR
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # 4. Build and Push Docker Image
-      - name: Build, tag, and push image to ECR
+      # 5️⃣ Scan image with Trivy (vulnerability scan)
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.login-ecr.outputs.registry }}/ecr_dotnet_repo:latest
+          format: table
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: CRITICAL,HIGH
+
+      # 6️⃣ Push image to ECR (only if scan passes)
+      - name: Push Docker image to ECR
+        if: success()
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ecr_dotnet_repo
-          IMAGE_TAG: latest
+          IMAGE_TAG: Trivyscannedimage
         run: |
-          echo "Building Docker image..."
-          echo "Using region: $aws_region"
-          docker build -f dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          echo "Pushing Docker image to ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "Push complete!"
+          echo "✅ Push complete!"
+
+      # 7️⃣ Display final image URL
+      - name: Display Image URL
+        run: echo "✅ Image pushed to: ${{ steps.login-ecr.outputs.registry }}/ecr_dotnet_repo:latest"
