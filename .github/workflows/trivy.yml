@@ -15,9 +15,11 @@ jobs:
       IMAGE_TAG: latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -25,32 +27,28 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.aws_region }}
 
+      # 3️⃣ Login to Amazon ECR
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # 4️⃣ Run Trivy vulnerability scan (table output)
       - name: Run Trivy vulnerability scan (table output)
         run: |
-          echo "Scanning ECR image for vulnerabilities..."
-          docker pull ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-
-          echo ""
-          echo "==================== TRIVY SCAN START ===================="
+          echo "Scanning image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
           trivy image \
             --exit-code 0 \
             --format table \
-            --output trivy-report.txt \
-            --ignore-unfixed \
             --pkg-types os,library \
+            --ignore-unfixed \
             --severity CRITICAL,HIGH \
+            -o trivy-report.txt \
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-
-          echo "==================== TRIVY SCAN END ======================"
-          echo ""
-          echo "✅ Trivy scan completed. Report saved as trivy-report.txt"
-          echo "----------------------------------------------------------"
+          
+          echo "==================== TRIVY SCAN COMPLETED ===================="
           cat trivy-report.txt
 
+      # 5️⃣ Upload the Trivy report as artifact
       - name: Upload Trivy text report
         if: always()
         uses: actions/upload-artifact@v4
