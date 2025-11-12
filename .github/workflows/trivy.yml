@@ -61,5 +61,5 @@ jobs:
             KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
          - uses: tale/kubectl-action@v1
          - run: | 
-             kubectl apply -f .
+             kubectl apply -f deployk8's/
              kubectl get po 
