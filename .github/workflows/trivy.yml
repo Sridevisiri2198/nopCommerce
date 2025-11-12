@@ -55,11 +55,19 @@ jobs:
         with:
           name: trivy-text-report
           path: trivy-report.txt
-      - name: EKS with manifestfile 
-           uses: actions-hub/kubectl@master
-           env:
-            KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
-         - uses: tale/kubectl-action@v1
-         - run: | 
-             kubectl apply -f deployk8's/
-             kubectl get po 
+
+      # 6️⃣ Setup kubectl for EKS
+      - name: Setup kubectl
+        uses: tale/kubectl-action@v1
+        with:
+          base64-kube-config: ${{ secrets.KUBE_CONFIG }}
+
+      # 7️⃣ Deploy to EKS and verify resources
+      - name: Deploy and Verify on EKS
+        run: |
+          echo "================= Deploying to EKS ================="
+          kubectl apply -f deployk8s/
+          echo "================= Verifying Cluster ================="
+          kubectl get nodes -o wide
+          echo "================= Verifying Pods ================="
+          kubectl get pods -A -o wide
