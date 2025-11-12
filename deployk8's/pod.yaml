@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dotnet-app
+  labels:
+    app: dotnet-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dotnet-app
+  template:
+    metadata:
+      labels:
+        app: dotnet-app
+    spec:
+      containers:
+      - name: dotnet-container
+        image: 699475951176.dkr.ecr.eu-north-1.amazonaws.com/ecr_dotnet_repo:latest
+        ports:
+        - containerPort: 5000
+      
