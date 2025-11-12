@@ -55,3 +55,11 @@ jobs:
         with:
           name: trivy-text-report
           path: trivy-report.txt
+      - name: EKS with manifestfile 
+           uses: actions-hub/kubectl@master
+           env:
+            KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+         - uses: tale/kubectl-action@v1
+         - run: | 
+             kubectl apply -f .
+             kubectl get po 
